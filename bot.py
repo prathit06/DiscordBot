@@ -91,8 +91,11 @@ async def getClanMembers(ctx, clantag):
 
 @tasks.loop(seconds=30)
 async def loop():
-    logging.info("Refrshing DB")
-    utilities.insertRecordsInDb("#92YQU2C")
+    try:
+        logging.info("Refrshing DB")
+        utilities.insertRecordsInDb("#92YQU2C")
+    except Exception as e:
+        logging.exception("Exception occured : {}".format(e))
 
 
 @bot.command(name='warinfo', help='fetches war info')
