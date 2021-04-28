@@ -34,7 +34,7 @@ async def on_ready():
     try:
         con = lite.connect('test.db')
         cur = con.cursor()
-        sql_script_path = dir_path+'\sql_utils\create_table.sql'
+        sql_script_path = 'create_table.sql'
 
         with open(sql_script_path, 'r') as sql_file:
             sql_script = sql_file.read()
