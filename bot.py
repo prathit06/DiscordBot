@@ -1,11 +1,12 @@
 import os
 import logging
 from dotenv import load_dotenv
-import json
 import sys
 import sqlite3 as lite
 import pandas as pd
 from unidecode import unidecode
+
+import coc
 
 import discord
 from discord.ext import commands, tasks
@@ -15,6 +16,7 @@ from utils import utilities
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+
 BOT_PREFIX = "id!"
 
 bot = commands.Bot(command_prefix=BOT_PREFIX)
@@ -24,8 +26,9 @@ logger.setLevel(logging.INFO)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-
 con = None
+
+client = coc.login(os.environ["DEV_SITE_EMAIL"], os.environ["DEV_SITE_PASSWORD"])
 
 
 @bot.event
@@ -52,53 +55,23 @@ async def on_ready():
             con.close()
 
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.errors.CheckFailure):
-        logging.info(error)
-        await ctx.send('You do not have the correct role for this command.')
-
-
 @bot.command(name='ping', help='checks if the bot is live')
 async def pingBot(ctx):
     logging.info("in ping command")
     await ctx.send('Bot up and running')
 
 
-@bot.command(name='alltimebest', help='fetches player info')
-async def getPlayerInfo(ctx, playertag):
-    bestTrophies = utilities.fetchPlayerTrophies(playertag)
-    await ctx.send('Your best trophies were ' + str(bestTrophies))
-
-
-@bot.command(name='clanmembers', help='fetches clan members')
-async def getClanMembers(ctx, clantag):
-
-    members = utilities.getClanMembers(clantag)
-    members_dict = json.loads(members)["items"]
-
-    embed = discord.Embed(title="Clan Members Info", color=discord.Color.blue())
-    embed.set_author(name="WarLeaderboardBot", icon_url="http://commondatastorage.googleapis.com/codeskulptor-assets/week5-triangle.png")
-
-    for index_member, member in enumerate(members_dict):
-        if index_member < 5:
-            embed.add_field(name="Name", value=member['name'], inline=True)
-            embed.add_field(name="Tag", value=member['tag'], inline=True)
-            embed.add_field(name="Trophies", value=member['trophies'], inline=True)
-
-    await ctx.send(embed=embed)
-
-
 @tasks.loop(seconds=30)
 async def loop():
     try:
         logging.info("Refrshing DB")
-        utilities.insertRecordsInDb("#92YQU2C")
+        await utilities.insertRecordsInDb_CWL("#92YQU2C", client)
+        # await utilities.insertRecordsInDb_normal_wars("#92YQU2C", client)
     except Exception as e:
         logging.exception("Exception occured : {}".format(e))
 
 
-@bot.command(name='warinfo', help='fetches war info')
+@bot.command(name='cwlinfo', help='fetches cwl info')
 async def getWarInfo(ctx):
 
     try:
@@ -107,8 +80,8 @@ async def getWarInfo(ctx):
 
         cur.execute("""
         select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction
-        from war_attacks
-        where season = (select max(season) from war_attacks)
+        from cwl_war_attacks
+        where season = (select max(season) from cwl_war_attacks)
         group by player_name,season
         order by totalStars desc,totalDestruction desc ;
         """)
@@ -125,19 +98,17 @@ async def getWarInfo(ctx):
 
             df = pd.DataFrame()
 
-            embed = discord.Embed(title="__**War Leader Board**__", color=discord.Color.blue())
+            embed = discord.Embed(title="__**CWL Leader Board**__", color=discord.Color.blue())
             # embed.set_thumbnail(url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxNDTGrePgl5cMkXr48xEeKeLs43-z6oq1EA&usqp=CAU")
             for index, row in enumerate(rows):
                 if index < 5*page and index >= 5*page-5:
-                    # print(row[0])
                     lstname.append(unidecode(row[0]))
-                    # lstname.append(unicodedata.normalize('NFKD', row[0]).encode('ascii', 'ignore').decode("utf-8"))
                     lststars.append(row[2])
                     lstdest.append(row[3])
 
-            df['Name'] = lstname
-            df['stars'] = lststars
-            df['dest'] = lstdest
+            df['<-----Name----->'] = lstname
+            df['<-----stars----->'] = lststars
+            df['<-----dest----->'] = lstdest
             df = df.to_markdown(index=False)
 
             embed.add_field(name="details", value="`{}`".format(df), inline=True)
