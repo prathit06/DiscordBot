@@ -79,14 +79,18 @@ async def getWarInfo(ctx):
         cur = con.cursor()
 
         cur.execute("""
-        select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction
+        select player_name,season,totalStars,totalDestruction,
+        round(cast(totalStars as float)/cast(warsplayed as float),3) as avg_stars from (
+        select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(1) as warsplayed
         from cwl_war_attacks
         where season = (select max(season) from cwl_war_attacks)
         group by player_name,season
-        order by totalStars desc,totalDestruction desc ;
+        order by totalStars desc,totalDestruction desc )
+        order by avg_stars desc;
         """)
 
         rows = cur.fetchall()
+        # print(rows)
         total_pages = int(len(rows)/5)
 
         pages = []
@@ -95,21 +99,25 @@ async def getWarInfo(ctx):
             lstname = []
             lststars = []
             lstdest = []
+            lstavg_stars = []
 
             df = pd.DataFrame()
 
             embed = discord.Embed(title="__**CWL Leader Board**__", color=discord.Color.blue())
-            # embed.set_thumbnail(url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxNDTGrePgl5cMkXr48xEeKeLs43-z6oq1EA&usqp=CAU")
             for index, row in enumerate(rows):
-                if index < 5*page and index >= 5*page-5:
+                if index <= 5*page and index >= 5*page-5:
                     lstname.append(unidecode(row[0]))
                     lststars.append(row[2])
                     lstdest.append(row[3])
+                    lstavg_stars.append(row[4])
 
-            df['<-----Name----->'] = lstname
-            df['<-----stars----->'] = lststars
-            df['<-----dest----->'] = lstdest
+            df['Player Name'] = lstname
+            df['Stars'] = lststars
+            df['Destruction'] = lstdest
+            df['Avg Stars'] = lstavg_stars
             df = df.to_markdown(index=False)
+
+            # print(df)
 
             embed.add_field(name="details", value="`{}`".format(df), inline=True)
             embed.set_footer(text="Season : {} • Made by BeoWulf".format(row[1]))
