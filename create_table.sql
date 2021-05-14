@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS cwl_war_attacks(
     stars INTEGER,
     destruction DECIMAL,
     insert_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    update_timestamp TIMESTAMP
+    update_timestamp TIMESTAMP,
+    UNIQUE (season,startTime,player_name,stars,destruction)
 );
 
 CREATE TABLE IF NOT EXISTS normal_war_attacks(
@@ -21,5 +22,6 @@ CREATE TABLE IF NOT EXISTS normal_war_attacks(
     stars INTEGER,
     destruction DECIMAL,
     insert_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    update_timestamp TIMESTAMP
+    update_timestamp TIMESTAMP,
+    UNIQUE (season,startTime,player_name,stars,destruction)
 );

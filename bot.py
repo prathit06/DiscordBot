@@ -79,7 +79,7 @@ async def loop():
         con.close()
 
     except Exception as e:
-        logging.error("Error connecting to db in on_ready() fun {}:".format(e))
+        logging.error("Error connecting to db {}:".format(e))
         sys.exit(1)
     finally:
         if con:
@@ -106,13 +106,13 @@ async def getClanWarInfo(ctx):
 
         cur.execute("""
         select player_name,season,totalStars,totalDestruction,
-        round(cast(totalStars as decimal)/cast(warsplayed as decimal),3) as avg_stars from (
-        select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(1) as warsplayed
+        warsplayed as Wars from (
+        select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(distinct startTime) as warsplayed
         from normal_war_attacks
         where season = (select max(season) from normal_war_attacks)
         group by player_name,season
         order by totalStars desc,totalDestruction desc ) as A
-        order by avg_stars desc;
+        order by totalStars desc;
         """)
 
         rows = cur.fetchall()
@@ -139,7 +139,7 @@ async def getClanWarInfo(ctx):
             df['PlayerName'] = lstname
             df['Stars'] = lststars
             df['Dest'] = lstdest
-            df['AvgStars'] = lstavg_stars
+            df['Wars'] = lstavg_stars
             df = df.to_markdown(index=False)
 
             # print(df)

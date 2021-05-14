@@ -64,10 +64,12 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                 try:
                     con = psycopg2.connect(postgre_conn_uri)
                     cur = con.cursor()
-
-                    query = '''insert into normal_war_attacks (''' + ','.join(list(insertRecords.keys()))+''') 
-                    values ''' + str(tuple(insertRecords.values()))
-
+                    query = """
+                    insert into normal_war_attacks(""" + ','.join(list(insertRecords.keys()))+""")
+                    values  """ + str(tuple(insertRecords.values())) + """
+                    on conflict(season,startTime,player_name,stars,destruction)
+                    do nothing
+                    """
                     cur.execute(query)
 
                     row_count = row_count + cur.rowcount
@@ -145,9 +147,12 @@ async def insertRecordsInDb_CWL(clantag, client):
                             con = psycopg2.connect(postgre_conn_uri)
                             cur = con.cursor()
 
-                            query = '''insert into normal_war_attacks (''' + ','.join(list(insertRecords.keys()))+''') 
-                            values ''' + str(tuple(insertRecords.values()))
-
+                            query = """
+                            insert into normal_war_attacks(""" + ','.join(list(insertRecords.keys()))+""")
+                            values  """ + str(tuple(insertRecords.values())) + """
+                            on conflict(season,startTime,player_name,stars,destruction)
+                            do nothing
+                            """
                             cur.execute(query)
 
                             row_count = row_count + cur.rowcount
