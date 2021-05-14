@@ -66,6 +66,26 @@ async def pingBot(ctx):
 @tasks.loop(seconds=30)
 async def loop():
     try:
+        con = psycopg2.connect(postgre_conn_uri)
+        cur = con.cursor()
+        sql_script_path = 'create_table.sql'
+
+        with open(sql_script_path, 'r') as sql_file:
+            sql_script = sql_file.read()
+
+        cur.execute(sql_script)
+        logging.info('table created')
+        con.commit()
+        con.close()
+
+    except Exception as e:
+        logging.error("Error connecting to db in on_ready() fun {}:".format(e))
+        sys.exit(1)
+    finally:
+        if con:
+            con.close()
+
+    try:
         await utilities.insertRecordsInDb_CWL("#92YQU2C", client)
         logging.info("Refreshed cwl table")
     except Exception as e:
