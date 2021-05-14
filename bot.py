@@ -2,7 +2,7 @@ import os
 import logging
 from dotenv import load_dotenv
 import sys
-import sqlite3 as lite
+import psycopg2
 import pandas as pd
 from unidecode import unidecode
 import math
@@ -30,26 +30,27 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 con = None
 
 client = coc.login(os.environ["DEV_SITE_EMAIL"], os.environ["DEV_SITE_PASSWORD"])
+postgre_conn_uri = os.environ["DATABASE_URL"] 
 
 
 @bot.event
 async def on_ready():
     logging.info(f'{bot.user.name} is connected to Discord !')
     try:
-        con = lite.connect('test.db')
+        con = psycopg2.connect(postgre_conn_uri)
         cur = con.cursor()
         sql_script_path = 'create_table.sql'
 
         with open(sql_script_path, 'r') as sql_file:
             sql_script = sql_file.read()
 
-        cur.executescript(sql_script)
+        cur.execute(sql_script)
         logging.info('table created')
         con.commit()
         con.close()
 
     except Exception as e:
-        logging.error("Error occured in on_ready() fun {}:".format(e))
+        logging.error("Error connecting to db in on_ready() fun {}:".format(e))
         sys.exit(1)
     finally:
         if con:
@@ -64,13 +65,14 @@ async def pingBot(ctx):
 
 @tasks.loop(seconds=30)
 async def loop():
-    logging.info("Refrshing DB")
     try:
         await utilities.insertRecordsInDb_CWL("#92YQU2C", client)
+        logging.info("Refreshed cwl table")
     except Exception as e:
         logging.exception("Exception occured in loop() for insertRecordsInDb_CWL : {}".format(e))
     try:
         await utilities.insertRecordsInDb_normal_wars("#92YQU2C", client)
+        logging.info("Refreshed normal wars table")
     except Exception as e:
         logging.exception("Exception occured in loop() for insertRecordsInDb_normal_wars : {}".format(e))
 
@@ -79,17 +81,17 @@ async def loop():
 async def getClanWarInfo(ctx):
 
     try:
-        con = lite.connect('test.db')
+        con = psycopg2.connect(postgre_conn_uri)
         cur = con.cursor()
 
         cur.execute("""
         select player_name,season,totalStars,totalDestruction,
-        round(cast(totalStars as float)/cast(warsplayed as float),3) as avg_stars from (
+        round(cast(totalStars as decimal)/cast(warsplayed as decimal),3) as avg_stars from (
         select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(1) as warsplayed
         from normal_war_attacks
         where season = (select max(season) from normal_war_attacks)
         group by player_name,season
-        order by totalStars desc,totalDestruction desc )
+        order by totalStars desc,totalDestruction desc ) as A
         order by avg_stars desc;
         """)
 
@@ -122,7 +124,7 @@ async def getClanWarInfo(ctx):
 
             # print(df)
 
-            embed.add_field(name=" ", value="`{}`".format(df), inline=True)
+            embed.add_field(name="Info", value="`{}`".format(df), inline=True)
             embed.set_footer(text="Season : {} • Made by BeoWulf".format(row[1]))
             pages.append(embed)
 
@@ -144,23 +146,23 @@ async def getClanWarInfo(ctx):
 async def getCWLWarInfo(ctx):
 
     try:
-        con = lite.connect('test.db')
+        con = psycopg2.connect(postgre_conn_uri)
         cur = con.cursor()
 
         cur.execute("""
         select player_name,season,totalStars,totalDestruction,
-        round(cast(totalStars as float)/cast(warsplayed as float),3) as avg_stars from (
+        round(cast(totalStars as decimal)/cast(warsplayed as decimal),3) as avg_stars from (
         select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(1) as warsplayed
-        from cwl_war_attacks
-        where season = (select max(season) from cwl_war_attacks)
+        from normal_war_attacks
+        where season = (select max(season) from normal_war_attacks)
         group by player_name,season
-        order by totalStars desc,totalDestruction desc )
+        order by totalStars desc,totalDestruction desc ) as A
         order by avg_stars desc;
         """)
 
         rows = cur.fetchall()
         # print(rows)
-        total_pages = int(len(rows)/5)
+        total_pages = math.ceil(len(rows)/5)
 
         pages = []
 
@@ -174,7 +176,7 @@ async def getCWLWarInfo(ctx):
 
             embed = discord.Embed(title="__**CWL Leader Board**__", color=discord.Color.blue())
             for index, row in enumerate(rows):
-                if index <= 5*page and index >= 5*page-5:
+                if index < 5*page and index >= 5*page-5:
                     lstname.append(unidecode(row[0]))
                     lststars.append(row[2])
                     lstdest.append(row[3])
@@ -188,7 +190,7 @@ async def getCWLWarInfo(ctx):
 
             # print(df)
 
-            embed.add_field(name="details", value="`{}`".format(df), inline=True)
+            embed.add_field(name="Info", value="`{}`".format(df), inline=True)
             embed.set_footer(text="Season : {} • Made by BeoWulf".format(row[1]))
             pages.append(embed)
 

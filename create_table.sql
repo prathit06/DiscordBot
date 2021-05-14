@@ -1,27 +1,25 @@
 CREATE TABLE IF NOT EXISTS cwl_war_attacks(
-    id INTEGER primary key AUTOINCREMENT,
-    season TEXT,
+    id serial,
+    season varchar,
     startTime TIMESTAMP,
     endTime TIMESTAMP,
-    player_name TEXT,
+    player_name varchar,
     player_townhalllevel INTEGER,
     stars INTEGER,
     destruction DECIMAL,
-    insert_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_timestamp DATETIME,
-    unique(season,startTime,player_name)
+    insert_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_timestamp TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS normal_war_attacks(
-    id INTEGER primary key AUTOINCREMENT,
-    season TEXT,
+    id serial,
+    season varchar,
     startTime TIMESTAMP,
     endTime TIMESTAMP,
-    player_name TEXT,
+    player_name varchar,
     player_townhalllevel INTEGER,
     stars INTEGER,
     destruction DECIMAL,
-    insert_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_timestamp DATETIME,
-    unique(season,startTime,player_name)
+    insert_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_timestamp TIMESTAMP
 );

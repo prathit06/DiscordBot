@@ -1,9 +1,14 @@
 import logging
-import sqlite3 as lite
 import sys
+import os
+import psycopg2
+from dotenv import load_dotenv
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+load_dotenv()
+postgre_conn_uri = os.environ["DATABASE_URL"]
 
 
 async def insertRecordsInDb_normal_wars(clantag, client):
@@ -13,7 +18,6 @@ async def insertRecordsInDb_normal_wars(clantag, client):
         latest_season = await client.get_seasons("29000022")
         latest_season = latest_season[-1]['id']
 
-        # group = await client.get_league_group('#92YQU2C')
         insertRecords = {}
         row_count = 0
 
@@ -27,12 +31,12 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                     logging.error("Exception in season :", e)
                     insertRecords['season'] = " "
                 try:
-                    insertRecords['startTime'] = war_info.start_time.time
+                    insertRecords['startTime'] = str(war_info.start_time.time)
                 except Exception as e:
                     logging.error("Exception in startTime :", e)
                     insertRecords['startTime'] = " "
                 try:
-                    insertRecords['endTime'] = war_info.end_time.time
+                    insertRecords['endTime'] = str(war_info.end_time.time)
                 except Exception as e:
                     logging.error("Exception in endTime :", e)
                     insertRecords['endTime'] = " "
@@ -58,15 +62,13 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                     insertRecords['destruction'] = " "
 
                 try:
-                    con = lite.connect('test.db')
+                    con = psycopg2.connect(postgre_conn_uri)
                     cur = con.cursor()
 
-                    cur.execute("""
-                    INSERT OR REPLACE INTO normal_war_attacks(startTime, endTime, season, player_name, player_townhalllevel, stars, destruction)
-                    VALUES (:startTime, :endTime, :season, :player_name, :player_townhalllevel, :stars, :destruction)
-                    on conflict (season,startTime,player_name) do
-                    update set stars = {}, destruction = {}, update_timestamp = CURRENT_TIMESTAMP
-                    """.format(insertRecords['stars'], insertRecords['destruction']), insertRecords)
+                    query = '''insert into normal_war_attacks (''' + ','.join(list(insertRecords.keys()))+''') 
+                    values ''' + str(tuple(insertRecords.values()))
+
+                    cur.execute(query)
 
                     row_count = row_count + cur.rowcount
                     con.commit()
@@ -140,15 +142,13 @@ async def insertRecordsInDb_CWL(clantag, client):
                             insertRecords['destruction'] = " "
 
                         try:
-                            con = lite.connect('test.db')
+                            con = psycopg2.connect(postgre_conn_uri)
                             cur = con.cursor()
 
-                            cur.execute("""
-                            INSERT OR REPLACE INTO cwl_war_attacks(startTime, endTime, season, player_name, player_townhalllevel, stars, destruction)
-                            VALUES (:startTime, :endTime, :season, :player_name, :player_townhalllevel, :stars, :destruction)
-                            on conflict (season,startTime,player_name) do
-                            update set stars = {}, destruction = {}, update_timestamp = CURRENT_TIMESTAMP
-                            """.format(insertRecords['stars'], insertRecords['destruction']), insertRecords)
+                            query = '''insert into normal_war_attacks (''' + ','.join(list(insertRecords.keys()))+''') 
+                            values ''' + str(tuple(insertRecords.values()))
+
+                            cur.execute(query)
 
                             row_count = row_count + cur.rowcount
                             con.commit()
