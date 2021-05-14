@@ -17,37 +17,44 @@ async def insertRecordsInDb_normal_wars(clantag, client):
         insertRecords = {}
         row_count = 0
 
-        war_info = await client.get_clan_war()
+        war_info = await client.get_clan_war('#92YQU2C')
         for attack in war_info.attacks:
             player_info = await client.get_player(attack.attacker_tag)
             if(player_info.clan.name == 'IMAGINE DRAGONS'):
                 try:
                     insertRecords['season'] = latest_season
-                except:
+                except Exception as e:
+                    logging.error("Exception in season :", e)
                     insertRecords['season'] = " "
                 try:
-                    insertRecords['startTime'] = war.start_time.time
-                except:
+                    insertRecords['startTime'] = war_info.start_time.time
+                except Exception as e:
+                    logging.error("Exception in startTime :", e)
                     insertRecords['startTime'] = " "
                 try:
-                    insertRecords['endTime'] = war.end_time.time
-                except:
+                    insertRecords['endTime'] = war_info.end_time.time
+                except Exception as e:
+                    logging.error("Exception in endTime :", e)
                     insertRecords['endTime'] = " "
                 try:
                     insertRecords['player_name'] = player_info.name
-                except:
+                except Exception as e:
+                    logging.error("Exception in player_name :", e)
                     insertRecords['player_name'] = " "
                 try:
                     insertRecords['player_townhalllevel'] = player_info.town_hall
-                except:
+                except Exception as e:
+                    logging.error("Exception in player_townhalllevel :", e)
                     insertRecords['player_townhalllevel'] = " "
                 try:
                     insertRecords['stars'] = attack.stars
-                except:
+                except Exception as e:
+                    logging.error("Exception in stars :", e)
                     insertRecords['stars'] = " "
                 try:
                     insertRecords['destruction'] = attack.destruction
-                except:
+                except Exception as e:
+                    logging.error("Exception in destruction :", e)
                     insertRecords['destruction'] = " "
 
                 try:
@@ -55,7 +62,7 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                     cur = con.cursor()
 
                     cur.execute("""
-                    INSERT OR REPLACE INTO cwl_war_attacks(startTime, endTime, season, player_name, player_townhalllevel, stars, destruction)
+                    INSERT OR REPLACE INTO normal_war_attacks(startTime, endTime, season, player_name, player_townhalllevel, stars, destruction)
                     VALUES (:startTime, :endTime, :season, :player_name, :player_townhalllevel, :stars, :destruction)
                     on conflict (season,startTime,player_name) do
                     update set stars = {}, destruction = {}, update_timestamp = CURRENT_TIMESTAMP
@@ -72,78 +79,90 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                     if con:
                         con.close()
 
-        logging.info("upserted {} rows in cwl_war_attacks table !".format(row_count))
-    except:
-        logging.error("No CWL league as of now")
+        logging.info("upserted {} rows in normal_war_attacks table !".format(row_count))
+    except Exception as e:
+        logging.error("Error occured in insertRecordsInDb_normal_wars() fun :", e)
 
 
 async def insertRecordsInDb_CWL(clantag, client):
 
-    try:
+    war = await client.get_clan_war('#92YQU2C')
 
-        latest_season = await client.get_seasons("29000022")
-        latest_season = latest_season[-1]['id']
+    if war.is_cwl:
+        try:
 
-        group = await client.get_league_group('#92YQU2C')
-        insertRecords = {}
-        row_count = 0
+            latest_season = await client.get_seasons("29000022")
+            latest_season = latest_season[-1]['id']
 
-        async for war in group.get_wars_for_clan('#92YQU2C'):
-            # if(war.clan_tag == '#92YQU2C'):
-            for attack in war.attacks:
-                player_info = await client.get_player(attack.attacker_tag)
-                if(player_info.clan.name == 'IMAGINE DRAGONS'):
-                    try:
-                        insertRecords['season'] = latest_season
-                    except:
-                        insertRecords['season'] = " "
-                    try:
-                        insertRecords['startTime'] = war.start_time.time
-                    except:
-                        insertRecords['startTime'] = " "
-                    try:
-                        insertRecords['endTime'] = war.end_time.time
-                    except:
-                        insertRecords['endTime'] = " "
-                    try:
-                        insertRecords['player_name'] = player_info.name
-                    except:
-                        insertRecords['player_name'] = " "
-                    try:
-                        insertRecords['player_townhalllevel'] = player_info.town_hall
-                    except:
-                        insertRecords['player_townhalllevel'] = " "
-                    try:
-                        insertRecords['stars'] = attack.stars
-                    except:
-                        insertRecords['stars'] = " "
-                    try:
-                        insertRecords['destruction'] = attack.destruction
-                    except:
-                        insertRecords['destruction'] = " "
+            group = await client.get_league_group('#92YQU2C')
+            insertRecords = {}
+            row_count = 0
 
-                    try:
-                        con = lite.connect('test.db')
-                        cur = con.cursor()
+            async for war in group.get_wars_for_clan('#92YQU2C'):
+                # if(war.clan_tag == '#92YQU2C'):
+                for attack in war.attacks:
+                    player_info = await client.get_player(attack.attacker_tag)
+                    if(player_info.clan.name == 'IMAGINE DRAGONS'):
+                        try:
+                            insertRecords['season'] = latest_season
+                        except Exception as e:
+                            logging.error("Exception in season :", e)
+                            insertRecords['season'] = " "
+                        try:
+                            insertRecords['startTime'] = war.start_time.time
+                        except Exception as e:
+                            logging.error("Exception in startTime :", e)
+                            insertRecords['startTime'] = " "
+                        try:
+                            insertRecords['endTime'] = war.end_time.time
+                        except Exception as e:
+                            logging.error("Exception in endTime :", e)
+                            insertRecords['endTime'] = " "
+                        try:
+                            insertRecords['player_name'] = player_info.name
+                        except Exception as e:
+                            logging.error("Exception in player_name :", e)
+                            insertRecords['player_name'] = " "
+                        try:
+                            insertRecords['player_townhalllevel'] = player_info.town_hall
+                        except Exception as e:
+                            logging.error("Exception in player_townhalllevel :", e)
+                            insertRecords['player_townhalllevel'] = " "
+                        try:
+                            insertRecords['stars'] = attack.stars
+                        except Exception as e:
+                            logging.error("Exception in stars :", e)
+                            insertRecords['stars'] = " "
+                        try:
+                            insertRecords['destruction'] = attack.destruction
+                        except Exception as e:
+                            logging.error("Exception in destruction :", e)
+                            insertRecords['destruction'] = " "
 
-                        cur.execute("""
-                        INSERT OR REPLACE INTO cwl_war_attacks(startTime, endTime, season, player_name, player_townhalllevel, stars, destruction)
-                        VALUES (:startTime, :endTime, :season, :player_name, :player_townhalllevel, :stars, :destruction)
-                        on conflict (season,startTime,player_name) do
-                        update set stars = {}, destruction = {}, update_timestamp = CURRENT_TIMESTAMP
-                        """.format(insertRecords['stars'], insertRecords['destruction']), insertRecords)
+                        try:
+                            con = lite.connect('test.db')
+                            cur = con.cursor()
 
-                        row_count = row_count + cur.rowcount
-                        con.commit()
-                        con.close()
+                            cur.execute("""
+                            INSERT OR REPLACE INTO cwl_war_attacks(startTime, endTime, season, player_name, player_townhalllevel, stars, destruction)
+                            VALUES (:startTime, :endTime, :season, :player_name, :player_townhalllevel, :stars, :destruction)
+                            on conflict (season,startTime,player_name) do
+                            update set stars = {}, destruction = {}, update_timestamp = CURRENT_TIMESTAMP
+                            """.format(insertRecords['stars'], insertRecords['destruction']), insertRecords)
 
-                    except Exception as e:
-                        logging.error("Error {}:".format(e))
-                        sys.exit(1)
-                    finally:
-                        if con:
+                            row_count = row_count + cur.rowcount
+                            con.commit()
                             con.close()
 
-        logging.info("upserted {} rows in cwl_war_attacks table !".format(row_count))
-    except Exception as e:
-        logging.error("Error occured :", e)
+                        except Exception as e:
+                            logging.error("Error {}:".format(e))
+                            sys.exit(1)
+                        finally:
+                            if con:
+                                con.close()
+
+            logging.info("upserted {} rows in cwl_war_attacks table !".format(row_count))
+        except Exception as e:
+            logging.error("Error occured in insertRecordsInDb_CWL() fun:", e)
+    else:
+        logging.info("No cwl currently")
