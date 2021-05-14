@@ -100,132 +100,100 @@ async def loop():
 @bot.command(name='warinfo', help='fetches normal wars info')
 async def getClanWarInfo(ctx):
 
-    try:
-        con = psycopg2.connect(postgre_conn_uri)
-        cur = con.cursor()
+    embeds = await utilities.get_normal_wars_embed()
 
-        cur.execute("""
-        select player_name,season,totalStars,totalDestruction,
-        warsplayed as Wars from (
-        select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(distinct startTime) as warsplayed
-        from normal_war_attacks
-        where season = (select max(season) from normal_war_attacks)
-        group by player_name,season
-        order by totalStars desc,totalDestruction desc ) as A
-        order by totalStars desc;
-        """)
+    embed_index = 0
+    message = await ctx.send(embed=embeds[embed_index])
+    await message.add_reaction('⬆️')
+    await message.add_reaction('⬇️')
+    await message.add_reaction('🔄')
 
-        rows = cur.fetchall()
-        total_pages = math.ceil(len(rows)/5)
+    reactable = True
 
-        pages = []
+    def check_reaction(r, user):
+        allowed_list = ['⬆️', '⬇️', '🔄']
+        return r.message == message and str(r.emoji) in allowed_list and not user.bot
 
-        for page in range(1, total_pages+1):
-            lstname = []
-            lststars = []
-            lstdest = []
-            lstavg_stars = []
+    while reactable:
+        try:
+            reaction, user = await bot.wait_for('reaction_add', check=check_reaction)
+            react_str = str(reaction.emoji)
+            if react_str == '⬆️':
+                embed_index += 1
+            elif react_str == '⬇️':
+                embed_index -= 1
+            elif react_str == '🔄':
+                embeds = await utilities.get_normal_wars_embed()
+                await message.edit(embed=embeds[0])
 
-            df = pd.DataFrame()
-
-            embed = discord.Embed(title="__**Clan Wars Leader Board**__", color=discord.Color.blue())
-            for index, row in enumerate(rows):
-                if index < 5*page and index >= 5*page-5:
-                    lstname.append(unidecode(row[0]))
-                    lststars.append(row[2])
-                    lstdest.append(row[3])
-                    lstavg_stars.append(row[4])
-
-            df['PlayerName'] = lstname
-            df['Stars'] = lststars
-            df['Dest'] = lstdest
-            df['Wars'] = lstavg_stars
-            df = df.to_markdown(index=False)
-
-            # print(df)
-
-            embed.add_field(name="Info", value="`{}`".format(df), inline=True)
-            embed.set_footer(text="Season : {} • Made by BeoWulf".format(row[1]))
-            pages.append(embed)
-
-        con.commit()
-        con.close()
-
-    except Exception as e:
-        logging.error("Error {}:".format(e))
-        sys.exit(1)
-    finally:
-        if con:
-            con.close()
-
-    paginator = Paginator(pages=pages, timeout=30000000.0, compact=True)
-    await paginator.start(ctx)
+            await message.edit(embed=embeds[embed_index % len(embeds)])
+            await reaction.remove(user)
+        except TimeoutError:
+            await message.clear_reactions()
+            reactable = False
 
 
-@bot.command(name='cwlinfo', help='fetches cwl info')
-async def getCWLWarInfo(ctx):
+# @bot.command(name='cwlinfo', help='fetches cwl info')
+# async def getCWLWarInfo(ctx):
 
-    try:
-        con = psycopg2.connect(postgre_conn_uri)
-        cur = con.cursor()
+#     try:
+#         con = psycopg2.connect(postgre_conn_uri)
+#         cur = con.cursor()
 
-        cur.execute("""
-        select player_name,season,totalStars,totalDestruction,
-        round(cast(totalStars as decimal)/cast(warsplayed as decimal),3) as avg_stars from (
-        select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(1) as warsplayed
-        from normal_war_attacks
-        where season = (select max(season) from normal_war_attacks)
-        group by player_name,season
-        order by totalStars desc,totalDestruction desc ) as A
-        order by avg_stars desc;
-        """)
+#         cur.execute("""
+#         select player_name,season,totalStars,totalDestruction,
+#         round(cast(totalStars as decimal)/cast(warsplayed as decimal),3) as avg_stars from (
+#         select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(1) as warsplayed
+#         from normal_war_attacks
+#         where season = (select max(season) from normal_war_attacks)
+#         group by player_name,season
+#         order by totalStars desc,totalDestruction desc ) as A
+#         order by avg_stars desc;
+#         """)
 
-        rows = cur.fetchall()
-        # print(rows)
-        total_pages = math.ceil(len(rows)/5)
+#         rows = cur.fetchall()
+#         total_pages = math.ceil(len(rows)/5)
 
-        pages = []
+#         pages = []
 
-        for page in range(1, total_pages+1):
-            lstname = []
-            lststars = []
-            lstdest = []
-            lstavg_stars = []
+#         for page in range(1, total_pages+1):
+#             lstname = []
+#             lststars = []
+#             lstdest = []
+#             lstavg_stars = []
 
-            df = pd.DataFrame()
+#             df = pd.DataFrame()
 
-            embed = discord.Embed(title="__**CWL Leader Board**__", color=discord.Color.blue())
-            for index, row in enumerate(rows):
-                if index < 5*page and index >= 5*page-5:
-                    lstname.append(unidecode(row[0]))
-                    lststars.append(row[2])
-                    lstdest.append(row[3])
-                    lstavg_stars.append(row[4])
+#             embed = discord.Embed(title="__**CWL Leader Board**__", color=discord.Color.blue())
+#             for index, row in enumerate(rows):
+#                 if index < 5*page and index >= 5*page-5:
+#                     lstname.append(unidecode(row[0]))
+#                     lststars.append(row[2])
+#                     lstdest.append(row[3])
+#                     lstavg_stars.append(row[4])
 
-            df['Player Name'] = lstname
-            df['Stars'] = lststars
-            df['Destruction'] = lstdest
-            df['Avg Stars'] = lstavg_stars
-            df = df.to_markdown(index=False)
+#             df['Player Name'] = lstname
+#             df['Stars'] = lststars
+#             df['Destruction'] = lstdest
+#             df['Avg Stars'] = lstavg_stars
+#             df = df.to_markdown(index=False)
 
-            # print(df)
+#             embed.add_field(name="Info", value="`{}`".format(df), inline=True)
+#             embed.set_footer(text="Season : {} • Made by BeoWulf".format(row[1]))
+#             pages.append(embed)
 
-            embed.add_field(name="Info", value="`{}`".format(df), inline=True)
-            embed.set_footer(text="Season : {} • Made by BeoWulf".format(row[1]))
-            pages.append(embed)
+#         con.commit()
+#         con.close()
 
-        con.commit()
-        con.close()
+#     except Exception as e:
+#         logging.error("Error {}:".format(e))
+#         sys.exit(1)
+#     finally:
+#         if con:
+#             con.close()
 
-    except Exception as e:
-        logging.error("Error {}:".format(e))
-        sys.exit(1)
-    finally:
-        if con:
-            con.close()
-
-    paginator = Paginator(pages=pages, timeout=30000000.0, compact=True)
-    await paginator.start(ctx)
+#     paginator = Paginator(pages=pages, timeout=30000000.0, compact=True)
+#     await paginator.start(ctx)
 
 loop.start()
 bot.run(DISCORD_TOKEN)
