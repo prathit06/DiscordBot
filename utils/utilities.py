@@ -60,7 +60,8 @@ async def get_normal_wars_embed():
             df = df.to_markdown(index=False)
 
             embed.add_field(name="Info", value="`{}`".format(df), inline=True)
-            embed.set_footer(text="Season : {season} • Made by BeoWulf".format(season=row[1]))
+            embed.set_footer(text="Season : {season} • Made by BeoWulf • Page {pagenum}/{totalpages}".format(
+                season=row[1], pagenum=page, totalpages=total_pages))
             pages.append(embed)
 
         con.commit()
