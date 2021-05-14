@@ -63,7 +63,7 @@ async def pingBot(ctx):
     await ctx.send('Bot up and running')
 
 
-@tasks.loop(seconds=30)
+@tasks.loop(seconds=300)
 async def loop():
     try:
         con = psycopg2.connect(postgre_conn_uri)

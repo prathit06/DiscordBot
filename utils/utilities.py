@@ -75,7 +75,6 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                     on conflict(season,startTime,player_name,stars,destruction,defender_tag)
                     do nothing
                     """
-                    logging.info(query)
                     cur.execute(query)
 
                     row_count = row_count + cur.rowcount
