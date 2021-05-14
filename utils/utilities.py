@@ -60,6 +60,11 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                 except Exception as e:
                     logging.error("Exception in destruction :", e)
                     insertRecords['destruction'] = " "
+                try:
+                    insertRecords['defender_tag'] = attack.defender_tag
+                except Exception as e:
+                    logging.error("Exception in defender_tag :", e)
+                    insertRecords['defender_tag'] = " "
 
                 try:
                     con = psycopg2.connect(postgre_conn_uri)
@@ -67,9 +72,10 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                     query = """
                     insert into normal_war_attacks(""" + ','.join(list(insertRecords.keys()))+""")
                     values  """ + str(tuple(insertRecords.values())) + """
-                    on conflict(season,startTime,player_name,stars,destruction)
+                    on conflict(season,startTime,player_name,stars,destruction,defender_tag)
                     do nothing
                     """
+                    logging.info(query)
                     cur.execute(query)
 
                     row_count = row_count + cur.rowcount

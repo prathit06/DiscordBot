@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS normal_war_attacks(
     player_townhalllevel INTEGER,
     stars INTEGER,
     destruction DECIMAL,
+    defender_tag varchar,
     insert_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_timestamp TIMESTAMP,
-    UNIQUE (season,startTime,player_name,stars,destruction)
+    UNIQUE (season,startTime,player_name,stars,destruction,defender_tag)
 );
