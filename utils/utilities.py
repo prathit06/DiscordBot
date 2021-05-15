@@ -3,12 +3,77 @@ import sys
 import os
 import psycopg2
 from dotenv import load_dotenv
+import math
+import pandas as pd
+from unidecode import unidecode
+
+import discord
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 load_dotenv()
 postgre_conn_uri = os.environ["DATABASE_URL"]
+
+
+async def get_normal_wars_embed():
+    try:
+        con = psycopg2.connect(postgre_conn_uri)
+        cur = con.cursor()
+
+        cur.execute("""
+        select player_name,season,totalStars,totalDestruction,
+        warsplayed as Wars from (
+        select player_name,season,sum(stars) totalStars,sum(destruction) totalDestruction,count(distinct startTime) as warsplayed
+        from normal_war_attacks
+        where season = (select max(season) from normal_war_attacks)
+        group by player_name,season
+        order by totalStars desc,totalDestruction desc ) as A
+        order by totalStars desc;
+        """)
+
+        rows = cur.fetchall()
+        total_pages = math.ceil(len(rows)/5)
+
+        pages = []
+
+        for page in range(1, total_pages+1):
+            lstname = []
+            lststars = []
+            lstdest = []
+            lstavg_stars = []
+
+            df = pd.DataFrame()
+
+            embed = discord.Embed(title="__**Clan Wars Leader Board**__", color=discord.Color.blue())
+            for index, row in enumerate(rows):
+                if index < 5*page and index >= 5*page-5:
+                    lstname.append(unidecode(row[0]))
+                    lststars.append(row[2])
+                    lstdest.append(row[3])
+                    lstavg_stars.append(row[4])
+
+            df['PlayerName'] = lstname
+            df['Stars'] = lststars
+            df['Dest'] = lstdest
+            df['Wars'] = lstavg_stars
+            df = df.to_markdown(index=False)
+
+            embed.add_field(name="Info", value="`{}`".format(df), inline=True)
+            embed.set_footer(text="Season : {season} • Made by BeoWulf • Page {pagenum}/{totalpages}".format(
+                season=row[1], pagenum=page, totalpages=total_pages))
+            pages.append(embed)
+
+        con.commit()
+        con.close()
+
+    except Exception as e:
+        logging.error("Error {}:".format(e))
+        sys.exit(1)
+    finally:
+        if con:
+            con.close()
+    return pages
 
 
 async def insertRecordsInDb_normal_wars(clantag, client):
@@ -24,7 +89,9 @@ async def insertRecordsInDb_normal_wars(clantag, client):
         war_info = await client.get_clan_war('#92YQU2C')
         for attack in war_info.attacks:
             player_info = await client.get_player(attack.attacker_tag)
-            if(player_info.clan.name == 'IMAGINE DRAGONS'):
+            if player_info.clan is None:
+                pass
+            elif(player_info.clan.name == 'IMAGINE DRAGONS'):
                 try:
                     insertRecords['season'] = latest_season
                 except Exception as e:
@@ -108,10 +175,11 @@ async def insertRecordsInDb_CWL(clantag, client):
             row_count = 0
 
             async for war in group.get_wars_for_clan('#92YQU2C'):
-                # if(war.clan_tag == '#92YQU2C'):
                 for attack in war.attacks:
                     player_info = await client.get_player(attack.attacker_tag)
-                    if(player_info.clan.name == 'IMAGINE DRAGONS'):
+                    if player_info.clan is None:
+                        pass
+                    elif(player_info.clan.name == 'IMAGINE DRAGONS'):
                         try:
                             insertRecords['season'] = latest_season
                         except Exception as e:
