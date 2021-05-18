@@ -33,7 +33,7 @@ async def get_normal_wars_embed():
         """)
 
         rows = cur.fetchall()
-        total_pages = math.ceil(len(rows)/5)
+        total_pages = math.ceil(len(rows)/10)
 
         pages = []
 
@@ -47,7 +47,7 @@ async def get_normal_wars_embed():
 
             embed = discord.Embed(title="__**Clan Wars Leader Board**__", color=discord.Color.blue())
             for index, row in enumerate(rows):
-                if index < 5*page and index >= 5*page-5:
+                if index < 10*page and index >= 10*page-10:
                     lstname.append(unidecode(row[0]))
                     lststars.append(row[2])
                     lstdest.append(row[3])
