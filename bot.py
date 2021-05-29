@@ -85,13 +85,13 @@ async def loop():
         if con:
             con.close()
 
+    # try:
+    #     await utilities.insertRecordsInDb_CWL("#92YQU2C", client)
+    #     logging.info("Refreshed cwl table")
+    # except Exception as e:
+    #     logging.exception("Exception occured in loop() for insertRecordsInDb_CWL : {}".format(e))
     try:
-        await utilities.insertRecordsInDb_CWL("#92YQU2C", client)
-        logging.info("Refreshed cwl table")
-    except Exception as e:
-        logging.exception("Exception occured in loop() for insertRecordsInDb_CWL : {}".format(e))
-    try:
-        await utilities.insertRecordsInDb_normal_wars("#92YQU2C", client)
+        await utilities.insertRecordsInDb_normal_wars("#92YQU2C", client, bot)
         logging.info("Refreshed normal wars table")
     except Exception as e:
         logging.exception("Exception occured in loop() for insertRecordsInDb_normal_wars : {}".format(e))

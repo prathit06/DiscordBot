@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import math
 import pandas as pd
 from unidecode import unidecode
+import datetime
 
 import discord
 
@@ -14,6 +15,17 @@ logger.setLevel(logging.INFO)
 
 load_dotenv()
 postgre_conn_uri = os.environ["DATABASE_URL"]
+
+
+async def one_star_tracker(attack, client, bot):
+    defender_name = await client.get_player(attack['defender_tag'])
+    embedVar = discord.Embed(title="__**1 Star Pro**__", color=0x00ff00, timestamp=datetime.datetime.utcnow())
+    embedVar.set_footer(text='\u200b', icon_url="https://i.imgur.com/uZIlRnK.png")
+    embedVar.set_thumbnail(url='https://i.kym-cdn.com/entries/icons/original/000/017/354/risitas.jpg')
+    embedVar.add_field(name="Player Name", value="`"+str(attack['player_name'])+"`", inline=False)
+    embedVar.add_field(name="Defender Name", value="`"+str(defender_name)+"`", inline=False)
+    channel = bot.get_channel(843349585132126211)  # clash of shame : 719107516662939668, test server : 843349585132126211
+    await channel.send(embed=embedVar)
 
 
 async def get_normal_wars_embed():
@@ -76,7 +88,7 @@ async def get_normal_wars_embed():
     return pages
 
 
-async def insertRecordsInDb_normal_wars(clantag, client):
+async def insertRecordsInDb_normal_wars(clantag, client, bot):
 
     try:
 
@@ -138,19 +150,33 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                         insertRecords['defender_tag'] = " "
 
                     try:
+
                         con = psycopg2.connect(postgre_conn_uri)
                         cur = con.cursor()
                         query = """
                         insert into normal_war_attacks(""" + ','.join(list(insertRecords.keys()))+""")
                         values  """ + str(tuple(insertRecords.values())) + """
                         on conflict(season,startTime,player_name,stars,destruction,defender_tag)
-                        do nothing
+                        do nothing RETURNING id;
                         """
                         cur.execute(query)
+                        inserted_id = cur.fetchone()
+                        if inserted_id is not None:
+                            one_star_flag_check = True
+                        else:
+                            one_star_flag_check = False
 
                         row_count = row_count + cur.rowcount
                         con.commit()
                         con.close()
+
+                        if one_star_flag_check:
+                            # insertRecords['stars'] = 1
+                            if insertRecords['stars'] == 1:
+                                logging.info("1 star secured")
+                                await one_star_tracker(insertRecords, client, bot)
+                            else:
+                                logging.info("{} scored >1 star".format(str(insertRecords['player_name'])))
 
                     except Exception as e:
                         logging.error("Error {}:".format(e))
@@ -158,6 +184,7 @@ async def insertRecordsInDb_normal_wars(clantag, client):
                     finally:
                         if con:
                             con.close()
+
         else:
             logging.info("Type of War is not random but {}".format(war_type))
 
