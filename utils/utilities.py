@@ -22,7 +22,7 @@ async def one_star_tracker(attack, client, bot):
     embedVar = discord.Embed(title="__**1 Star Pro**__", color=0x00ff00, timestamp=datetime.datetime.utcnow())
     embedVar.set_footer(text='\u200b', icon_url="https://i.imgur.com/uZIlRnK.png")
     embedVar.set_thumbnail(url='https://i.kym-cdn.com/entries/icons/original/000/017/354/risitas.jpg')
-    embedVar.add_field(name="Noobda", value="`"+str(attack['player_name'])+"`", inline=False)
+    embedVar.add_field(name="Attacker", value="`"+str(attack['player_name'])+"`", inline=False)
     # embedVar.add_field(name="Defender Name", value="`"+str(defender_name)+"`", inline=False)
     channel = bot.get_channel(719107516662939668)  # clash of shame : 719107516662939668, test server : 843349585132126211
     await channel.send(embed=embedVar)
